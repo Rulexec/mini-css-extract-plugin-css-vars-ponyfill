@@ -1,34 +1,46 @@
 import cssVarsPonyfill from 'css-vars-ponyfill';
 
-import(/* webpackChunkName: 'first' */ './first.js').then(m => {
-	m.addExample();
+const variables = {
+	'example-color': 'green',
+	'example2-color': 'blue',
+};
 
-	let variables = {
-		'example-color': 'green',
-		'example2-color': 'blue',
-	};
+/*
+	I have global function, but now I'm not worry about calling `cssVarsPonyfill` at random places
+*/
+window._miniCssOnLoad = function(linkEl) {
+	// Actually here I can do:
+	//   linkEl.setAttribute('data-css-vars-ponyfill', '');
+	// not in the `webpack.config.js`
 
-	// I must call it after `first` will be loaded
-	cssVarsPonyfill({
-		onlyLegacy: false,
-
-		variables,
-	});
-
-	import(/* webpackChunkName: 'second' */ './second.js').then(m => {
-		m.addExample();
-
-		// I must call it after `second` will be loaded
-		// If I comment it, second square will be red (and no color, if CSS custom properties are not supported)
+	return new Promise((resolve, reject) => {
 		cssVarsPonyfill({
 			onlyLegacy: false,
 
 			variables,
+
+			include: '[data-css-vars-ponyfill]',
+
+			onComplete() {
+				resolve();
+			},
+			onError(e) {
+				reject(e);
+			}
 		});
 	});
-});
+};
 
-/*
-	When I have complex application with a lot of chunks — it is hard to find all points,
-	when chunk will be loaded at the first time to trigger `cssVarsPonyfill()`
-*/
+// My product that I'm working on has damn balancing for 10% of users (beta),
+// where I need to pass special URL-parameter to fetch some data from required group of servers
+window._miniCssHrefUpdate = function(href) {
+	return href + '?v=2';
+};
+
+import(/* webpackChunkName: 'first' */ './first.js').then(m => {
+	m.addExample();
+
+	import(/* webpackChunkName: 'second' */ './second.js').then(m => {
+		m.addExample();
+	});
+});

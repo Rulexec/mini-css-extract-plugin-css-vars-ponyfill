@@ -14,7 +14,30 @@ module.exports = {
 	},
 
 	plugins: [
-		new MiniCssExtractPlugin(),
+		new MiniCssExtractPlugin({
+			runtimeHooks: {
+				linkTagCreated({ linkTagVarName }) {
+					const code = `${linkTagVarName}.setAttribute('data-css-vars-ponyfill', '');`;
+
+					return { code };
+				},
+
+				linkTagOnLoadFunction({ linkTagVarName, resolveFunctionName, rejectFunctionName }) {
+					let code = `(function(){`;
+					code += `window._miniCssOnLoad(${linkTagVarName})`;
+					code += `.then(${resolveFunctionName}, ${rejectFunctionName});`;
+					code += `})`;
+
+					return { code };
+				},
+
+				linkTagPreSetHref({ hrefVarName }) {
+					const code = `${hrefVarName} = window._miniCssHrefUpdate(${hrefVarName});`;
+
+					return { code };
+				},
+			},
+		}),
 		new HtmlWebpackPlugin()
 	],
 
